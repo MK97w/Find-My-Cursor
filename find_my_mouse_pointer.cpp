@@ -3,10 +3,60 @@
 #include <Windows.h>
 #include <WinUser.h>
 #include <chrono>
+#include <string>
 #include <thread>
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <unordered_map>
+#include <optional>
+
+using registeredPath = std::optional<std::wstring>;
+using userSettingsMap = std::unordered_map<std::wstring, registeredPath>;
+
+userSettingsMap userCursorMap =
+{
+    {L"Arrow",{}},//same as assigning std::nullopt but it's good to know your syntax options, right?
+    {L"IBeam", std::nullopt},
+    {L"Hand",std::nullopt},
+    {L"Help",std::nullopt},
+    {L"No",std::nullopt},
+    {L"NWPen",std::nullopt},
+    {L"Person",std::nullopt},
+    {L"Pin",std::nullopt},
+    {L"SizeAll",std::nullopt},
+    {L"SizeNESW",std::nullopt},
+    {L"SizeNS",std::nullopt},
+    {L"SizeNWSE",std::nullopt},
+    {L"SizeWE",std::nullopt},
+    {L"UpArrow",std::nullopt},
+    {L"Wait",std::nullopt},
+};
+
+
+std::wstring getRegistryValue(HKEY hKey, const wchar_t* valueName) 
+{
+    const DWORD bufferSize = 1024;
+    std::wstring result;
+    DWORD dataSize = bufferSize * sizeof(wchar_t);
+    std::vector<wchar_t> buffer(bufferSize);
+    LONG queryResult = RegQueryValueEx(hKey, valueName, nullptr, nullptr, reinterpret_cast<LPBYTE>(buffer.data()), &dataSize);
+    if (queryResult == ERROR_SUCCESS && dataSize > 0) 
+    {
+        result.assign(buffer.data(), dataSize / sizeof(wchar_t) - 1); // Subtract 1 to remove null terminator
+    }
+
+    return result;
+}
+
+
+
+void fetchUserSettings(userSettingsMap&)
+{
+    ;
+}
+
+
 
 bool hasDoneBefore { false };
 
