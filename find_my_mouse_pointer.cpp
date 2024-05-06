@@ -14,7 +14,7 @@
 using registeredPath = std::optional<std::wstring>;
 using userSettingsMap = std::unordered_map<std::wstring, registeredPath>;
 
-userSettingsMap userCursorMap =
+userSettingsMap settingsMap =
 {
     {L"Arrow",{}},//same as assigning std::nullopt but it's good to know your syntax options, right?
     {L"IBeam", std::nullopt},
@@ -51,9 +51,28 @@ std::wstring getRegistryValue(HKEY hKey, const wchar_t* valueName)
 
 
 
-void fetchUserSettings(userSettingsMap&)
+void fetchUserSettings(userSettingsMap& setMap)
 {
-    ;
+    HKEY hKey;
+    LONG openResult = RegOpenKeyEx(HKEY_CURRENT_USER, L"Control Panel\\Cursors", 0, KEY_READ, &hKey);
+    if (openResult == ERROR_SUCCESS) 
+    {
+
+        for (auto& pair : setMap)
+        {
+            pair.second = getRegistryValue(hKey, pair.first.c_str());
+#if 1
+            std::wcout << pair.first << ": " << pair.second.value() << std::endl;
+#endif       
+        }
+
+        RegCloseKey(hKey);
+    }
+    else 
+    {
+        std::cerr << "Error opening registry key: " << openResult << std::endl;
+    }
+
 }
 
 
@@ -127,13 +146,15 @@ int main()
         prevTime = currentTime;
     }*/
 
-    while (true)
+    while (false)
     {
         getchar();
         setCurserSize(172,172);
         getchar();
         setCurserSize(32, 32);
     }
+
+    fetchUserSettings(settingsMap);
 
     return 0;
 }
