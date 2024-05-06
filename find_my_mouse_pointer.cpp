@@ -10,14 +10,31 @@
 #include <vector>
 #include <unordered_map>
 #include <optional>
+#include <tuple>
 
+using OEMResourceOrdinalNumbers = int;
+using StandardCursorID = int;
+using cursorPointer = std::wstring;
 using registeredPath = std::optional<std::wstring>;
-using userSettingsMap = std::unordered_map<std::wstring, registeredPath>;
 
+using cursorPathInfo = std::tuple<registeredPath, OEMResourceOrdinalNumbers, StandardCursorID>;
+using userSettingsMap = std::unordered_map<cursorPointer, cursorPathInfo>;
+
+
+//using userSettingsMap = std::unordered_map<cursorPointer, cursorPathInfo>;
+
+
+userSettingsMap settingsMap = {
+    { L"Arrow", { std::nullopt, OCR_NORMAL, IDC_ARROW } },
+    // Add more entries here as needed
+};
+
+
+/*
 userSettingsMap settingsMap =
 {
-    {L"Arrow",{}},//same as assigning std::nullopt but it's good to know your syntax options, right?
-    {L"IBeam", std::nullopt},
+   {L"Arrow", std::make_tuple(std::nullopt, OCR_NORMAL, IDC_ARROW)},//same as assigning std::nullopt but it's good to know your syntax options, right?
+  /*  {L"IBeam", std::nullopt},
     {L"Hand",std::nullopt},
     {L"Help",std::nullopt},
     {L"No",std::nullopt},
@@ -32,7 +49,7 @@ userSettingsMap settingsMap =
     {L"UpArrow",std::nullopt},
     {L"Wait",std::nullopt},
 };
-
+*/
 
 std::wstring getRegistryValue(HKEY hKey, const wchar_t* valueName) 
 {
@@ -58,11 +75,11 @@ void fetchUserSettings(userSettingsMap& setMap)
     if (openResult == ERROR_SUCCESS) 
     {
 
-        for (auto& pair : setMap)
+        for (auto& [cursor, info] : setMap)  //structured binding 
         {
-            pair.second = getRegistryValue(hKey, pair.first.c_str());
+            get<0>(info) = getRegistryValue(hKey, cursor.c_str());
 #if 1
-            std::wcout << pair.first << ": " << pair.second.value() << std::endl;
+            std::wcout << cursor << ": " << get<0>(info).value() << std::endl;
 #endif       
         }
 
@@ -146,15 +163,10 @@ int main()
         prevTime = currentTime;
     }*/
 
-    while (false)
-    {
-        getchar();
-        setCurserSize(172,172);
-        getchar();
-        setCurserSize(32, 32);
-    }
 
-    fetchUserSettings(settingsMap);
+
+
+    //fetchUserSettings(settingsMap);
 
     return 0;
 }
