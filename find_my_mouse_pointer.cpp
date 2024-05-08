@@ -13,7 +13,7 @@
 #include <tuple>
 
 using OEMResourceOrdinalNumbers = int;
-using StandardCursorID = int;
+using StandardCursorID = LPWSTR;
 using cursorPointer = std::wstring;
 using registeredPath = std::optional<std::wstring>;
 
