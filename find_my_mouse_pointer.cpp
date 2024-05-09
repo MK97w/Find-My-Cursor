@@ -26,7 +26,20 @@ using userSettingsMap = std::unordered_map<cursorPointer, cursorPathInfo>;
 
 userSettingsMap settingsMap = {
     { L"Arrow", { std::nullopt, OCR_NORMAL, IDC_ARROW } },
-    // Add more entries here as needed
+    { L"Hand",  { std::nullopt, OCR_HAND, IDC_HAND  } },
+    { L"IBeam", { std::nullopt, OCR_IBEAM, IDC_IBEAM  } },
+    //{ L"Help",  { std::nullopt, OCR_HAND, IDC_HAND }}, -> no windows handle found
+    { L"No", { std::nullopt, OCR_NO, IDC_NO  } },
+    //{L"NWPen",{ std::nullopt, , IDC_NO  } }, -> no windows handle found OCR
+    // { L"Person", { std::nullopt, , IDC_NO  } }, -> no windows handle found OCR 
+    // { L"Pin", { std::nullopt, OCR_NO, IDC_NO  } },-> no windows handle found OCR 
+    { L"SizeAll", { std::nullopt, OCR_SIZEALL, IDC_SIZEALL } },
+    { L"SizeNESW", { std::nullopt, OCR_SIZENESW, IDC_SIZENESW } },
+    { L"SizeNS", { std::nullopt, OCR_SIZENS, IDC_SIZENS} },
+    { L"SizeNWSE", { std::nullopt, OCR_SIZENWSE, IDC_SIZENWSE } },
+    { L"SizeWE", { std::nullopt, OCR_SIZEWE, IDC_SIZEWE } },
+    { L"UpArrow", { std::nullopt, OBM_UPARROW, IDC_UPARROW } }, //not sure UpArrow would work!
+    { L"Wait", { std::nullopt, OCR_WAIT, IDC_WAIT } },
 };
 
 
