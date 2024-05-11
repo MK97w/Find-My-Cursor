@@ -43,27 +43,6 @@ userSettingsMap settingsMap = {
 };
 
 
-/*
-userSettingsMap settingsMap =
-{
-   {L"Arrow", std::make_tuple(std::nullopt, OCR_NORMAL, IDC_ARROW)},//same as assigning std::nullopt but it's good to know your syntax options, right?
-  /*  {L"IBeam", std::nullopt},
-    {L"Hand",std::nullopt},
-    {L"Help",std::nullopt},
-    {L"No",std::nullopt},
-    {L"NWPen",std::nullopt},
-    {L"Person",std::nullopt},
-    {L"Pin",std::nullopt},
-    {L"SizeAll",std::nullopt},
-    {L"SizeNESW",std::nullopt},
-    {L"SizeNS",std::nullopt},
-    {L"SizeNWSE",std::nullopt},
-    {L"SizeWE",std::nullopt},
-    {L"UpArrow",std::nullopt},
-    {L"Wait",std::nullopt},
-};
-*/
-
 std::wstring getRegistryValue(HKEY hKey, const wchar_t* valueName) 
 {
     const DWORD bufferSize = 1024;
@@ -105,7 +84,43 @@ void fetchUserSettings(userSettingsMap& setMap)
 
 }
 
+std::wstring replaceBackslashes( std::wstring& str ) 
+{
+    for (wchar_t& ch : str) 
+    {
+        if (ch == L'\\') 
+        {
+            str.insert(&ch - &str[0], 1, L'\\');
+        }
+    }
+    return str;
+}
 
+std::wstring get_CompatiblePath(std::wstring& str)
+{
+    const std::wstring pathWithoutSystemRoot = L"%SystemRoot%";
+
+    size_t pos = str.find(pathWithoutSystemRoot);
+    if (pos == std::wstring::npos) 
+    {
+        return str; // Return the original string if SystemRoot is not found
+    }
+    else {
+        wchar_t systemRoot[MAX_PATH];
+        DWORD len = GetEnvironmentVariable(L"SystemRoot", systemRoot, MAX_PATH);
+        if (len != 0 && len < MAX_PATH) 
+        {
+            str.replace(pos, pathWithoutSystemRoot.size(), systemRoot);
+            return str;
+        }
+        else 
+        {
+            std::cerr << "Failed to get SystemRoot environment variable." << std::endl;
+            return str; // Return the original string if SystemRoot is found but GetEnvironmentVariable fails
+        }
+    }
+
+}
 
 bool hasDoneBefore { false };
 
@@ -114,14 +129,36 @@ double Distance(int x1, int y1, int x2, int y2)
     return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
 }
 
-void setCurserSize(int x, int y)
+void setCurserSize(const userSettingsMap& setMap, int size)
 {
     HCURSOR customCursor;
-    customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\arrow_i.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
-    SetSystemCursor(customCursor, OCR_NORMAL);
-    if (x > 32)
+    
+    for (const auto& info : setMap)
     {
-        customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\beam_i.cur", IMAGE_CURSOR, x, y, LR_CREATEDIBSECTION));
+        if (get<0>(info.second).has_value())
+        {
+            auto val = get<0>(info.second).value();
+            auto str = get_CompatiblePath(val);
+
+            customCursor = static_cast<HCURSOR>(LoadImage(nullptr, str.c_str(), IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
+            SetSystemCursor(customCursor, get<1>(info.second));
+        }
+        else
+        {
+            customCursor = LoadCursor(nullptr, get<2>(info.second));
+            SetSystemCursor(customCursor, get<1>(info.second));
+        }
+
+    }
+
+
+
+/*
+    customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\arrow_i.cur", IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
+    SetSystemCursor(customCursor, OCR_NORMAL);
+    if (size > 32)
+    {
+        customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\beam_i.cur", IMAGE_CURSOR, size, size, LR_CREATEDIBSECTION));
         SetSystemCursor(customCursor, OCR_IBEAM);
     }
     else
@@ -129,26 +166,25 @@ void setCurserSize(int x, int y)
         HCURSOR hStandardIBeamCursor = LoadCursor(nullptr, IDC_IBEAM);
         SetSystemCursor(hStandardIBeamCursor, OCR_IBEAM);
     }
-    customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\beam_i.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
+    customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\beam_i.cur", IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
     SetSystemCursor(customCursor, OCR_IBEAM);
-    customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\aero_link.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
-    SetSystemCursor(customCursor, OCR_HAND);
+    customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\aero_link.cur", IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
+    SetSystemCursor(customCursor, OCR_HAND);*/
 }
-
 int main() 
 {
-   /* HINSTANCE hinst;            // handle to current instance 
+    HINSTANCE hinst;            // handle to current instance 
     HCURSOR hCurs1, hCurs2;     // cursor handles 
 
     // Create a standard hourglass cursor. 
-
+    fetchUserSettings(settingsMap);
     POINT prevPos;
     GetCursorPos(&prevPos);
     auto prevTime = std::chrono::steady_clock::now();
 
     while (true)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
         POINT currentPos;
         GetCursorPos(&currentPos);
@@ -164,22 +200,22 @@ int main()
         if (speed > 3000)
         {
            std::cout << "bigger" << '\n';
-           setCurserSize(150, 150);
+           setCurserSize(settingsMap,150);
         }
         else 
         {
             std::cout << "smaller"<<'\n';
-            setCurserSize(32, 32);
+            setCurserSize(settingsMap,32);
         }
 
         prevPos = currentPos;
         prevTime = currentTime;
-    }*/
+    }
 
 
 
 
-    //fetchUserSettings(settingsMap);
+    fetchUserSettings(settingsMap);
 
     return 0;
 }
