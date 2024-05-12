@@ -1,3 +1,12 @@
+/*
+TODO: 1. call resize only ONCE for either cases satisfied.
+      2. add a filter to have a smoother speed calculation.
+      3. maybe find a better way to manage Ibeam cursor icon
+      4. test with custom cursor icons
+      5. Instead of using 32 for default sizes, read the system settings and make the resizing proportional 
+
+*/
+
 #define OEMRESOURCE
 
 #include <Windows.h>
@@ -22,6 +31,8 @@ using userSettingsMap = std::unordered_map<cursorPointer, cursorPathInfo>;
 
 
 //using userSettingsMap = std::unordered_map<cursorPointer, cursorPathInfo>;
+
+
 
 
 userSettingsMap settingsMap = {
@@ -156,45 +167,13 @@ void setCurserSize(const userSettingsMap& setMap, int size)
 
 }
 
-void setCurserSize(int x, int y)
-{
-    HCURSOR customCursor;
-    //customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\arrow_i.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
-    //SetSystemCursor(customCursor, OCR_NORMAL);
-    if (x > 32)
-    {
-        customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\beam_m.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
-        SetSystemCursor(customCursor, OCR_IBEAM);
-    }
-    else
-    {
-        HCURSOR hBuiltInIBeamCursor = LoadCursor(nullptr, IDC_IBEAM);
-        if (hBuiltInIBeamCursor != nullptr)
-        {
-            auto m = SetSystemCursor(hBuiltInIBeamCursor, OCR_IBEAM);
-            if ( m==false)
-            {
-                // Handle error setting built-in I-beam cursor
-                DWORD error = GetLastError();
-                std::cerr << "Error setting built-in I-beam cursor: " << error << std::endl;
-            }
-        }
-    }
-   // customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\beam_i.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
-   // SetSystemCursor(customCursor, OCR_IBEAM);
-    //customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\aero_link.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
-    //SetSystemCursor(customCursor, OCR_HAND);
-}
-
 int main() 
 {
-    static int testValue = 3001;
-    static int cnt = 0;
-    HINSTANCE hinst;            // handle to current instance 
-    HCURSOR hCurs1, hCurs2;     // cursor handles 
-
+    HINSTANCE hinst;          
+    HCURSOR hCurs1, hCurs2;    
 
     fetchUserSettings(settingsMap);
+   
     POINT prevPos;
     GetCursorPos(&prevPos);
     auto prevTime = std::chrono::steady_clock::now();
@@ -213,30 +192,19 @@ int main()
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - prevTime).count() / 1000.0;
 
         auto speed = distance / elapsedTime;
-        //speed = testValue;
         if (speed > 3000)
         {
-           std::cout << "bigger" << '\n';
+           //std::cout << "bigger" << '\n';
            setCurserSize(settingsMap,150);
-           //setCurserSize(150, 150);
         }
         else 
         {
-            std::cout << "smaller"<<'\n';
-            //setCurserSize(32, 32);
+            //std::cout << "smaller"<<'\n';
             setCurserSize(settingsMap,32);
         }
 
         prevPos = currentPos;
-        prevTime = currentTime;
-
-
-        cnt++;
-        if (cnt >= 2)
-            testValue = 200;
-
-
-        
+        prevTime = currentTime;        
     }
 
     return 0;
