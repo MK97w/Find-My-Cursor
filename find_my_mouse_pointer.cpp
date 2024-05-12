@@ -126,32 +126,70 @@ void setCurserSize(const userSettingsMap& setMap, int size)
     for (const auto& info : setMap)
     {
 
-        if (get<0>(info.second).has_value())
+        if ( get<0>(info.second).has_value() )
         {
             auto val = get<0>(info.second).value();
             auto str = get_CompatiblePath(val);
 
             customCursor = static_cast<HCURSOR>(LoadImage(nullptr, str.c_str(), IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
             SetSystemCursor(customCursor, get<1>(info.second));
+            
         }
-        else if (L"IBeam" == info.first && size > 32)
+        else if ( L"IBeam" == info.first )
         {   
             std::wstring systemroot = L"%SystemRoot%";
             auto tmpAddr = get_CompatiblePath(systemroot);
-            customCursor = static_cast<HCURSOR>(LoadImage(nullptr, tmpAddr.append(L"\\Cursors\\beam_i.cur").c_str(), IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
+            if (size > 32)
+                customCursor = static_cast<HCURSOR>(LoadImage(nullptr, tmpAddr.append(L"\\Cursors\\beam_m.cur").c_str(), IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
+            else 
+                customCursor = static_cast<HCURSOR>(LoadImage(nullptr, tmpAddr.append(L"\\Cursors\\beam_m.cur").c_str(), IMAGE_CURSOR, 27, 27, LR_LOADFROMFILE)); //found 27 by trial and error. Not a great way
+         
             SetSystemCursor(customCursor, get<1>(info.second));
         }
         else
         {
-            customCursor = LoadCursor(nullptr, get<2>(info.second));
-            SetSystemCursor(customCursor, get<1>(info.second));
+            std::cerr << "fault!";
         }
+        
 
     }
 
 }
+
+void setCurserSize(int x, int y)
+{
+    HCURSOR customCursor;
+    //customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\arrow_i.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
+    //SetSystemCursor(customCursor, OCR_NORMAL);
+    if (x > 32)
+    {
+        customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\beam_m.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
+        SetSystemCursor(customCursor, OCR_IBEAM);
+    }
+    else
+    {
+        HCURSOR hBuiltInIBeamCursor = LoadCursor(nullptr, IDC_IBEAM);
+        if (hBuiltInIBeamCursor != nullptr)
+        {
+            auto m = SetSystemCursor(hBuiltInIBeamCursor, OCR_IBEAM);
+            if ( m==false)
+            {
+                // Handle error setting built-in I-beam cursor
+                DWORD error = GetLastError();
+                std::cerr << "Error setting built-in I-beam cursor: " << error << std::endl;
+            }
+        }
+    }
+   // customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\beam_i.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
+   // SetSystemCursor(customCursor, OCR_IBEAM);
+    //customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\aero_link.cur", IMAGE_CURSOR, x, y, LR_LOADFROMFILE));
+    //SetSystemCursor(customCursor, OCR_HAND);
+}
+
 int main() 
 {
+    static int testValue = 3001;
+    static int cnt = 0;
     HINSTANCE hinst;            // handle to current instance 
     HCURSOR hCurs1, hCurs2;     // cursor handles 
 
@@ -175,20 +213,30 @@ int main()
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - prevTime).count() / 1000.0;
 
         auto speed = distance / elapsedTime;
-        speed = 5001;
+        //speed = testValue;
         if (speed > 3000)
         {
            std::cout << "bigger" << '\n';
            setCurserSize(settingsMap,150);
+           //setCurserSize(150, 150);
         }
         else 
         {
             std::cout << "smaller"<<'\n';
+            //setCurserSize(32, 32);
             setCurserSize(settingsMap,32);
         }
 
         prevPos = currentPos;
         prevTime = currentTime;
+
+
+        cnt++;
+        if (cnt >= 2)
+            testValue = 200;
+
+
+        
     }
 
     return 0;
