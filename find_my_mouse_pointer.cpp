@@ -43,7 +43,7 @@ userSettingsMap settingsMap = {
 };
 
 
-std::wstring getRegistryValue(HKEY hKey, const wchar_t* valueName) 
+std::optional<std::wstring> getRegistryValue(HKEY hKey, const wchar_t* valueName) 
 {
     const DWORD bufferSize = 1024;
     std::wstring result;
@@ -54,8 +54,10 @@ std::wstring getRegistryValue(HKEY hKey, const wchar_t* valueName)
     {
         result.assign(buffer.data(), dataSize / sizeof(wchar_t) - 1); // Subtract 1 to remove null terminator
     }
-
-    return result;
+    if (result.size())
+        return result;
+    else
+        return std::nullopt;
 }
 
 
@@ -70,7 +72,7 @@ void fetchUserSettings(userSettingsMap& setMap)
         for (auto& [cursor, info] : setMap)  //structured binding 
         {
             get<0>(info) = getRegistryValue(hKey, cursor.c_str());
-#if 1
+#if 0
             std::wcout << cursor << ": " << get<0>(info).value() << std::endl;
 #endif       
         }
@@ -82,18 +84,6 @@ void fetchUserSettings(userSettingsMap& setMap)
         std::cerr << "Error opening registry key: " << openResult << std::endl;
     }
 
-}
-
-std::wstring replaceBackslashes( std::wstring& str ) 
-{
-    for (wchar_t& ch : str) 
-    {
-        if (ch == L'\\') 
-        {
-            str.insert(&ch - &str[0], 1, L'\\');
-        }
-    }
-    return str;
 }
 
 std::wstring get_CompatiblePath(std::wstring& str)
@@ -135,12 +125,20 @@ void setCurserSize(const userSettingsMap& setMap, int size)
     
     for (const auto& info : setMap)
     {
+
         if (get<0>(info.second).has_value())
         {
             auto val = get<0>(info.second).value();
             auto str = get_CompatiblePath(val);
 
             customCursor = static_cast<HCURSOR>(LoadImage(nullptr, str.c_str(), IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
+            SetSystemCursor(customCursor, get<1>(info.second));
+        }
+        else if (L"IBeam" == info.first && size > 32)
+        {   
+            std::wstring systemroot = L"%SystemRoot%";
+            auto tmpAddr = get_CompatiblePath(systemroot);
+            customCursor = static_cast<HCURSOR>(LoadImage(nullptr, tmpAddr.append(L"\\Cursors\\beam_i.cur").c_str(), IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
             SetSystemCursor(customCursor, get<1>(info.second));
         }
         else
@@ -151,32 +149,13 @@ void setCurserSize(const userSettingsMap& setMap, int size)
 
     }
 
-
-
-/*
-    customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\arrow_i.cur", IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
-    SetSystemCursor(customCursor, OCR_NORMAL);
-    if (size > 32)
-    {
-        customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\beam_i.cur", IMAGE_CURSOR, size, size, LR_CREATEDIBSECTION));
-        SetSystemCursor(customCursor, OCR_IBEAM);
-    }
-    else
-    {
-        HCURSOR hStandardIBeamCursor = LoadCursor(nullptr, IDC_IBEAM);
-        SetSystemCursor(hStandardIBeamCursor, OCR_IBEAM);
-    }
-    customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\beam_i.cur", IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
-    SetSystemCursor(customCursor, OCR_IBEAM);
-    customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\aero_link.cur", IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
-    SetSystemCursor(customCursor, OCR_HAND);*/
 }
 int main() 
 {
     HINSTANCE hinst;            // handle to current instance 
     HCURSOR hCurs1, hCurs2;     // cursor handles 
 
-    // Create a standard hourglass cursor. 
+
     fetchUserSettings(settingsMap);
     POINT prevPos;
     GetCursorPos(&prevPos);
@@ -196,7 +175,7 @@ int main()
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - prevTime).count() / 1000.0;
 
         auto speed = distance / elapsedTime;
-        //speed = 5001;
+        speed = 5001;
         if (speed > 3000)
         {
            std::cout << "bigger" << '\n';
@@ -212,55 +191,5 @@ int main()
         prevTime = currentTime;
     }
 
-
-
-
-    fetchUserSettings(settingsMap);
-
     return 0;
 }
-
-
-
-/*
-std::wstring GetCursorIconName()
-{
-    CURSORINFO cursorInfo = { sizeof(cursorInfo) };
-    GetCursorInfo(&cursorInfo);
-
-    HCURSOR customCursor;
-    customCursor = static_cast<HCURSOR>(LoadImage(nullptr, L"C:\\Windows\\Cursors\\arrow_i.cur", IMAGE_CURSOR, x, y, LR_CREATEDIBSECTION));
-
-    HCURSOR hCursor = cursorInfo.hCursor;
-    if (hCursor != nullptr)
-    {
-        if (hCursor == LoadCursor(nullptr, IDC_ARROW))
-        {
-            return L"IDC_ARROW";
-        }
-        else if (hCursor == LoadCursor(nullptr, IDC_IBEAM))
-        {
-            return L"IDC_IBEAM";
-        }
-        else if (hCursor == LoadCursor(nullptr, IDC_HAND))
-        {
-            return L"IDC_HAND";
-        }
-        // Add more comparisons for other cursor icons as needed
-
-        // If the cursor doesn't match any known icons, return "Unknown"
-    }
-
-    return L"Unknown";
-}
-
-int main()
-{
-    while (true) {
-        getchar();
-        std::wstring cursorIconName = GetCursorIconName();
-        std::wcout << L"Current cursor icon: " << cursorIconName << std::endl;
-    }
-    return 0;
-}
-*/
