@@ -20,6 +20,7 @@ TODO: 1. call resize only ONCE for either cases satisfied.
 #include <unordered_map>
 #include <optional>
 #include <tuple>
+#include "median_filter.h"
 
 using OEMResourceOrdinalNumbers = int;
 using StandardCursorID = LPWSTR;
@@ -169,6 +170,7 @@ void setCurserSize(const userSettingsMap& setMap, int size)
 
 int main() 
 {
+    
     HINSTANCE hinst;          
     HCURSOR hCurs1, hCurs2;    
 
@@ -192,6 +194,9 @@ int main()
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - prevTime).count() / 1000.0;
 
         auto speed = distance / elapsedTime;
+        
+        static MedianFilter<decltype(speed)> mf;
+        
         if (speed > 3000)
         {
            //std::cout << "bigger" << '\n';

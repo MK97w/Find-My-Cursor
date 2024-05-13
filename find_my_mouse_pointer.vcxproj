@@ -133,6 +133,9 @@
   <ItemGroup>
     <ClCompile Include="find_my_mouse_pointer.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="median_filter.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
