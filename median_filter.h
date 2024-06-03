@@ -12,7 +12,7 @@ class MedianFilter
         "Please instantiate MedianFilter class with an Arithmetic Type which is not char.");
 
 public:
-    MedianFilter() { index = 0; };
+    MedianFilter() : index(0), itsData(windowSize) {}
 
     T getData()
     {
@@ -32,13 +32,19 @@ public:
     
     void enterData(T data)
     {
+        std::cout << index << " " << data << std::endl;
         itsData[index++] = data;
-        if (index >= 29)
+        if (index >= windowSize -1)
             index = 0;
     }
 
+    bool isFull()
+    {
+        return index == windowSize - 2;
+    }
+
 private:
-    static constexpr int medianSize = 10;
+    static constexpr int medianSize = 3;
     static constexpr int windowSize{ medianSize * 3 };
     std::vector<T> itsData;
     int index;

@@ -1,6 +1,5 @@
 /*
 TODO: 1. call resize only ONCE for either cases satisfied.
-      2. add a filter to have a smoother speed calculation.
       3. maybe find a better way to manage Ibeam cursor icon
       4. test with custom cursor icons
       5. Instead of using 32 for default sizes, read the system settings and make the resizing proportional 
@@ -29,10 +28,6 @@ using registeredPath = std::optional<std::wstring>;
 
 using cursorPathInfo = std::tuple<registeredPath, OEMResourceOrdinalNumbers, StandardCursorID>;
 using userSettingsMap = std::unordered_map<cursorPointer, cursorPathInfo>;
-
-
-//using userSettingsMap = std::unordered_map<cursorPointer, cursorPathInfo>;
-
 
 
 
@@ -84,7 +79,8 @@ void fetchUserSettings(userSettingsMap& setMap)
         for (auto& [cursor, info] : setMap)  //structured binding 
         {
             get<0>(info) = getRegistryValue(hKey, cursor.c_str());
-#if 0
+#if 1
+            if(get<0>(info).has_value())
             std::wcout << cursor << ": " << get<0>(info).value() << std::endl;
 #endif       
         }
@@ -182,9 +178,12 @@ int main()
 
     while (true)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(75));
 
         POINT currentPos;
+
+
+
         GetCursorPos(&currentPos);
 
         auto currentTime = std::chrono::steady_clock::now();
@@ -194,19 +193,27 @@ int main()
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - prevTime).count() / 1000.0;
 
         auto speed = distance / elapsedTime;
-        
         static MedianFilter<decltype(speed)> mf;
         
-        if (speed > 3000)
+        
+        mf.enterData(speed);
+        
+        if ( mf.isFull() )
         {
-           //std::cout << "bigger" << '\n';
-           setCurserSize(settingsMap,150);
+            if (auto res = mf.getData(); res > 4800)
+            {
+                //std::cout << "bigger" << '\n';
+                setCurserSize(settingsMap, 150);
+            }
+            else
+            {
+                //std::cout << "smaller"<<'\n';
+                setCurserSize(settingsMap, 32);
+            }
         }
-        else 
-        {
-            //std::cout << "smaller"<<'\n';
-            setCurserSize(settingsMap,32);
-        }
+
+
+
 
         prevPos = currentPos;
         prevTime = currentTime;        
