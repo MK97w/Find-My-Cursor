@@ -37,6 +37,11 @@ public:
     {
         return index;
     }
+
+    int getSampleSize()
+    {
+        return windowSize;
+    }
     
     void enterData(T data)
     {

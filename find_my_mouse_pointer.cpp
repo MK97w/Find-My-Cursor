@@ -29,7 +29,13 @@ using registeredPath = std::optional<std::wstring>;
 using cursorPathInfo = std::tuple<registeredPath, OEMResourceOrdinalNumbers, StandardCursorID>;
 using userSettingsMap = std::unordered_map<cursorPointer, cursorPathInfo>;
 
+enum class CursorState
+{
+    SMALL,
+    BIG
+};
 
+CursorState currentState = CursorState::SMALL;
 
 userSettingsMap settingsMap = {
     { L"Arrow", { std::nullopt, OCR_NORMAL, IDC_ARROW } },
@@ -120,7 +126,7 @@ std::wstring get_CompatiblePath(std::wstring& str)
 
 }
 
-bool hasDoneBefore { false };
+
 
 double Distance(int x1, int y1, int x2, int y2)
 {
@@ -198,17 +204,23 @@ int main()
         
         mf.enterData(speed);
         
-        if ( mf.getIndex() == 4 )
+        if ( mf.getIndex() == mf.getSampleSize() - 1 )
         {
             if (auto res = mf.getData(); res > 4800)
             {
-                //std::cout << "bigger" << '\n';
-                setCurserSize(settingsMap, 150);
+                if (currentState != CursorState::BIG)
+                {
+                    setCurserSize(settingsMap, 150);
+                    currentState = CursorState::BIG;
+                }
             }
             else
             {
-                //std::cout << "smaller"<<'\n';
-                setCurserSize(settingsMap, 32);
+                if (currentState != CursorState::SMALL)
+                {
+                    setCurserSize(settingsMap, 32);
+                    currentState = CursorState::SMALL;
+                }
             }
         }
 
