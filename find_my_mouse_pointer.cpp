@@ -198,7 +198,7 @@ int main()
         
         mf.enterData(speed);
         
-        if ( mf.isFull() )
+        if ( mf.getIndex() == 4 )
         {
             if (auto res = mf.getData(); res > 4800)
             {
