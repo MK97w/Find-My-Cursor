@@ -1,5 +1,5 @@
 /*
-TODO: 1. call resize only ONCE for either cases satisfied.
+TODO: 
       3. maybe find a better way to manage Ibeam cursor icon
       4. test with custom cursor icons
       5. Instead of using 32 for default sizes, read the system settings and make the resizing proportional 
@@ -29,13 +29,15 @@ using registeredPath = std::optional<std::wstring>;
 using cursorPathInfo = std::tuple<registeredPath, OEMResourceOrdinalNumbers, StandardCursorID>;
 using userSettingsMap = std::unordered_map<cursorPointer, cursorPathInfo>;
 
+std::optional<DWORD> cursorBaseSize;
+
 enum class CursorState
 {
-    SMALL,
+    ORIGINAL,
     BIG
 };
 
-CursorState currentState = CursorState::SMALL;
+CursorState currentState = CursorState::ORIGINAL;
 
 userSettingsMap settingsMap = {
     { L"Arrow", { std::nullopt, OCR_NORMAL, IDC_ARROW } },
@@ -73,6 +75,17 @@ std::optional<std::wstring> getRegistryValue(HKEY hKey, const wchar_t* valueName
         return std::nullopt;
 }
 
+std::optional<DWORD> getRegistryDWORD(HKEY hKey, const wchar_t* valueName)
+{
+    DWORD data = 0;
+    DWORD dataSize = sizeof(data);
+    LONG queryResult = RegQueryValueEx(hKey, valueName, nullptr, nullptr, reinterpret_cast<LPBYTE>(&data), &dataSize);
+    if (queryResult == ERROR_SUCCESS && dataSize == sizeof(data))
+    {
+        return data;
+    }
+    return std::nullopt;
+}
 
 
 void fetchUserSettings(userSettingsMap& setMap)
@@ -81,11 +94,21 @@ void fetchUserSettings(userSettingsMap& setMap)
     LONG openResult = RegOpenKeyEx(HKEY_CURRENT_USER, L"Control Panel\\Cursors", 0, KEY_READ, &hKey);
     if (openResult == ERROR_SUCCESS) 
     {
+        cursorBaseSize = getRegistryDWORD(hKey, L"CursorBaseSize");
+
+        if (cursorBaseSize.has_value())
+        {
+            std::wcout << L"CursorBaseSize: " << cursorBaseSize.value() << std::endl;
+        }
+        else
+        {
+            cursorBaseSize = 32;
+        }
 
         for (auto& [cursor, info] : setMap)  //structured binding 
         {
             get<0>(info) = getRegistryValue(hKey, cursor.c_str());
-#if 1
+#if 0
             if(get<0>(info).has_value())
             std::wcout << cursor << ": " << get<0>(info).value() << std::endl;
 #endif       
@@ -109,7 +132,8 @@ std::wstring get_CompatiblePath(std::wstring& str)
     {
         return str; // Return the original string if SystemRoot is not found
     }
-    else {
+    else 
+    {
         wchar_t systemRoot[MAX_PATH];
         DWORD len = GetEnvironmentVariable(L"SystemRoot", systemRoot, MAX_PATH);
         if (len != 0 && len < MAX_PATH) 
@@ -184,11 +208,7 @@ int main()
 
     while (true)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(75));
-
         POINT currentPos;
-
-
 
         GetCursorPos(&currentPos);
 
@@ -210,25 +230,22 @@ int main()
             {
                 if (currentState != CursorState::BIG)
                 {
-                    setCurserSize(settingsMap, 150);
+                    setCurserSize(settingsMap, static_cast<int>(cursorBaseSize.value()*5));
                     currentState = CursorState::BIG;
                 }
             }
             else
             {
-                if (currentState != CursorState::SMALL)
+                if (currentState != CursorState::ORIGINAL)
                 {
-                    setCurserSize(settingsMap, 32);
-                    currentState = CursorState::SMALL;
+                    setCurserSize(settingsMap, static_cast<int>(cursorBaseSize.value()));
+                    currentState = CursorState::ORIGINAL;
                 }
             }
         }
-
-
-
-
         prevPos = currentPos;
         prevTime = currentTime;        
+        std::this_thread::sleep_for(std::chrono::milliseconds(75));
     }
 
     return 0;
