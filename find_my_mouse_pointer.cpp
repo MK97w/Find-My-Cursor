@@ -2,8 +2,6 @@
 TODO: 
       3. maybe find a better way to manage Ibeam cursor icon
       4. test with custom cursor icons
-      5. Instead of using 32 for default sizes, read the system settings and make the resizing proportional 
-
 */
 
 #define OEMRESOURCE
@@ -113,7 +111,6 @@ void fetchUserSettings(userSettingsMap& setMap)
             std::wcout << cursor << ": " << get<0>(info).value() << std::endl;
 #endif       
         }
-
         RegCloseKey(hKey);
     }
     else 
@@ -126,7 +123,6 @@ void fetchUserSettings(userSettingsMap& setMap)
 std::wstring get_CompatiblePath(std::wstring& str)
 {
     const std::wstring pathWithoutSystemRoot = L"%SystemRoot%";
-
     size_t pos = str.find(pathWithoutSystemRoot);
     if (pos == std::wstring::npos) 
     {
@@ -168,7 +164,6 @@ void setCurserSize(const userSettingsMap& setMap, int size)
         {
             auto val = get<0>(info.second).value();
             auto str = get_CompatiblePath(val);
-
             customCursor = static_cast<HCURSOR>(LoadImage(nullptr, str.c_str(), IMAGE_CURSOR, size, size, LR_LOADFROMFILE));
             SetSystemCursor(customCursor, get<1>(info.second));
             
@@ -199,38 +194,28 @@ int main()
     
     HINSTANCE hinst;          
     HCURSOR hCurs1, hCurs2;    
-
-    fetchUserSettings(settingsMap);
-   
     POINT prevPos;
     GetCursorPos(&prevPos);
     auto prevTime = std::chrono::steady_clock::now();
-
+    
     while (true)
     {
+        fetchUserSettings(settingsMap);
         POINT currentPos;
-
         GetCursorPos(&currentPos);
-
         auto currentTime = std::chrono::steady_clock::now();
-
         auto distance = Distance(prevPos.x, prevPos.y, currentPos.x, currentPos.y);
-
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - prevTime).count() / 1000.0;
-
         auto speed = distance / elapsedTime;
         static MedianFilter<decltype(speed)> mf;
-        
-        
         mf.enterData(speed);
-        
         if ( mf.getIndex() == mf.getSampleSize() - 1 )
         {
             if (auto res = mf.getData(); res > 4800)
             {
                 if (currentState != CursorState::BIG)
                 {
-                    setCurserSize(settingsMap, static_cast<int>(cursorBaseSize.value()*5));
+                    setCurserSize(settingsMap, static_cast<int>(cursorBaseSize.value()*3));
                     currentState = CursorState::BIG;
                 }
             }
@@ -245,8 +230,7 @@ int main()
         }
         prevPos = currentPos;
         prevTime = currentTime;        
-        std::this_thread::sleep_for(std::chrono::milliseconds(75));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
-
     return 0;
 }
